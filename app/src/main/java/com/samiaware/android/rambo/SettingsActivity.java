@@ -34,7 +34,7 @@ import java.util.List;
  * API Guide</a> for more information on developing a Settings UI.
  */
 public class SettingsActivity extends PreferenceActivity {
-    public static final String KEY_PREF_URI = "pref_uri";
+    public static final String KEY_PREF_URL = "pref_url";
     public static final String KEY_PREF_JAVASCRIPTCALLBACK = "pref_JavaScriptCallBack";
     /**
      * A preference value change listener that updates the preference's summary
@@ -180,7 +180,7 @@ public class SettingsActivity extends PreferenceActivity {
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
-            bindPreferenceSummaryToValue(findPreference("pref_uri"));
+            bindPreferenceSummaryToValue(findPreference("pref_url"));
             bindPreferenceSummaryToValue(findPreference("pref_JavaScriptCallBack"));
         }
 

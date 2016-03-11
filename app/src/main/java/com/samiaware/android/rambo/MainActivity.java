@@ -40,10 +40,11 @@ import java.util.Objects;
 
 public class MainActivity extends Activity {
 
-    WebView myBrowser;
-    private boolean mIsRegisterReceiver;
-    private String JavaScriptCallBack = "callFromActivity";
-    private String URI = "http://run.plnkr.co/plunks/idPf98/";
+    WebView myWebView;
+    Browser _myBrowser;
+    Scanner _myScanner;
+
+    private String URL = "http://run.plnkr.co/plunks/idPf98/";
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -60,32 +61,12 @@ public class MainActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main2);
 
-        initialize();
+        myWebView = (WebView) findViewById(R.id.mybrowser);
+        _myBrowser = new Browser(myWebView);
+        _myScanner = new Scanner(_myBrowser, this);
+        _myBrowser.addJavaScriptInterface(_myScanner, "Scanner");
+        _myBrowser.loadURL(URL);
         registerReceiver();
-        myBrowser = (WebView) findViewById(R.id.mybrowser);
-
-        myBrowser.setWebViewClient(new WebViewClient() {
-
-            @Override
-            public void onReceivedSslError (WebView view, SslErrorHandler handler, SslError error) {
-                handler.proceed();
-            }
-        });
-        //Add JavaScript Interface
-        final MyJavaScriptInterface myJavaScriptInterface
-                = new MyJavaScriptInterface(this);
-        myBrowser.addJavascriptInterface(myJavaScriptInterface, "AndroidFunction");
-        myBrowser.getSettings().setJavaScriptEnabled(true);
-        myBrowser.getSettings().setDomStorageEnabled(true);
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN){
-            myBrowser.getSettings().setAllowUniversalAccessFromFileURLs(true);
-            myBrowser.getSettings().setAllowFileAccessFromFileURLs(true);
-        }
-
-        myBrowser.setWebChromeClient(new WebChromeClient());
-        //myBrowser.loadUrl("http://run.plnkr.co/plunks/idPf98/");
-        loadURL();
-
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -97,6 +78,7 @@ public class MainActivity extends Activity {
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
@@ -113,99 +95,30 @@ public class MainActivity extends Activity {
     }
     private void refresh() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        URI = sharedPref.getString(SettingsActivity.KEY_PREF_URI, "");
-        JavaScriptCallBack = sharedPref.getString(SettingsActivity.KEY_PREF_JAVASCRIPTCALLBACK, "");
+        URL = sharedPref.getString(SettingsActivity.KEY_PREF_URL, "");
+        _myBrowser.JavaScriptCallBack = sharedPref.getString(SettingsActivity.KEY_PREF_JAVASCRIPTCALLBACK, "");
 
-        loadURL();
+        _myBrowser.loadURL(URL);
     }
-    private void loadURL() {
 
-            myBrowser.loadUrl(URI);
-
-    }
-    private void initialize()
-    {
-
-        mIsRegisterReceiver = false;
-
-    }
     private void registerReceiver()
     {
-        if(mIsRegisterReceiver) return;
+        if(_myScanner.isRegistered) return;
+        //Create Intent filter to register with BroadcastReceiver on the ContextWrapper
         IntentFilter filter = new IntentFilter();
         filter.addAction(Constants.ACTION_BARCODE_CALLBACK_DECODING_DATA);
         filter.addAction(Constants.ACTION_BARCODE_CALLBACK_REQUEST_SUCCESS);
         filter.addAction(Constants.ACTION_BARCODE_CALLBACK_REQUEST_FAILED);
 
-        registerReceiver(mReceiver, filter);
-        mIsRegisterReceiver = true;
+        registerReceiver(_myScanner, filter);
+        _myScanner.register();
     }
     private void unregisterReceiver()
     {
-        if(!mIsRegisterReceiver) return;
-        unregisterReceiver(mReceiver);
-        mIsRegisterReceiver = false;
+        if(!_myScanner.isRegistered) return;
+        unregisterReceiver(_myScanner);
+        _myScanner.unregister();
     }
-    private int mBarcodeHandle;
-    private int mCount = 0;
-
-    private BroadcastReceiver mReceiver = new BroadcastReceiver()
-    {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            int seq = intent.getIntExtra(Constants.EXTRA_INT_DATA3, 0);
-            if(action.equals(Constants.ACTION_BARCODE_CALLBACK_DECODING_DATA))
-            {
-                int handle = intent.getIntExtra(Constants.EXTRA_HANDLE, 0);
-                byte[] data = intent.getByteArrayExtra(Constants.EXTRA_BARCODE_DECODING_DATA);
-                String result = "[BarcodeDecodingData handle : "+handle+" / count : "+mCount+" / seq : "+seq+"]\n";
-                String barcode = "";
-                if(data!=null) barcode = new String(data);
-                    myBrowser.loadUrl("javascript:" + JavaScriptCallBack + "(\"" + barcode + "\")");
-//                setResultText(result);
-                mCount++;
-            }
-            else if(action.equals(Constants.ACTION_BARCODE_CALLBACK_REQUEST_SUCCESS))
-            {
-                mBarcodeHandle = intent.getIntExtra(Constants.EXTRA_HANDLE, 0);
-//                setSuccessFailText("Success : "+seq);
-//                if(seq == 100) mCurrentStatus = STATUS_OPEN;
-//                else if(seq == 200) mCurrentStatus = STATUS_CLOSE;
-//                else if(seq == 300) mCurrentStatus = STATUS_TRIGGER_ON;
-//
-//                refreshCurrentStatus();
-                //showToast("Barcode SUCCESS:"+mBarcodeHandle);
-            }
-            else if(action.equals(Constants.ACTION_BARCODE_CALLBACK_REQUEST_FAILED))
-            {
-                int result = intent.getIntExtra(Constants.EXTRA_INT_DATA2, 0);
-                if(result == Constants.ERROR_BARCODE_DECODING_TIMEOUT)
-                {
-//                    setSuccessFailText("Failed result : "+"Decode Timeout"+" / seq : "+seq);
-                }
-                else if(result == Constants.ERROR_NOT_SUPPORTED)
-                {
-//                    setSuccessFailText("Failed result : "+"Not Supoorted"+" / seq : "+seq);
-                }
-                else if(result == Constants.ERROR_BARCODE_ERROR_USE_TIMEOUT)
-                {
-//                    mCurrentStatus = STATUS_CLOSE;
-//                    setSuccessFailText("Failed result : "+"Use Timeout"+" / seq : "+seq);
-                }
-                else if(result == Constants.ERROR_BARCODE_ERROR_ALREADY_OPENED)
-                {
-                    //mCurrentStatus = STATUS_CLOSE;
-//                    setSuccessFailText("Failed result : "+"Already opened"+" / seq : "+seq);
-                }
-                else {
-//                    setSuccessFailText("Failed result : "+result+" / seq : "+seq);
-                }
-                //showToast("Barcode FAILED:"+result);
-//                refreshCurrentStatus();
-            }
-        }
-    };
 
     @Override
     public void onStart() {
@@ -249,31 +162,10 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        destroyEvent();
+        unregisterReceiver();
         super.onDestroy();
     }
 
-    public class MyJavaScriptInterface {
-        Context mContext;
-
-        MyJavaScriptInterface(Context c) {
-            mContext = c;
-        }
-        @JavascriptInterface
-        public void showToast(String toast) {
-            Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show();
-        }
-        @JavascriptInterface
-        public void openAndroidDialog() {
-            AlertDialog.Builder myDialog
-                    = new AlertDialog.Builder(MainActivity.this);
-            myDialog.setTitle("DANGER!");
-            myDialog.setMessage("You can do what you want!");
-            myDialog.setPositiveButton("ON", null);
-            myDialog.show();
-        }
-
-    }
 
     private boolean mIsOpened = false;
     private void destroyEvent()
@@ -282,7 +174,7 @@ public class MainActivity extends Activity {
         {
             Intent intent = new Intent();
             intent.setAction(Constants.ACTION_BARCODE_CLOSE);
-            intent.putExtra(Constants.EXTRA_HANDLE, mBarcodeHandle);
+            intent.putExtra(Constants.EXTRA_HANDLE, _myBrowser.barcodeHandle);
             intent.putExtra(Constants.EXTRA_INT_DATA3, 600);
             sendBroadcast(intent);
         }
