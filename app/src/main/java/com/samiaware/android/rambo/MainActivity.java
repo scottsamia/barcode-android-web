@@ -93,33 +93,6 @@ public class MainActivity extends Activity {
                 return super.onOptionsItemSelected(item);
         }
     }
-    private void refresh() {
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        URL = sharedPref.getString(SettingsActivity.KEY_PREF_URL, "");
-        _myBrowser.JavaScriptCallBack = sharedPref.getString(SettingsActivity.KEY_PREF_JAVASCRIPTCALLBACK, "");
-
-        _myBrowser.loadURL(URL);
-    }
-
-    private void registerReceiver()
-    {
-        if(_myScanner.isRegistered) return;
-        //Create Intent filter to register with BroadcastReceiver on the ContextWrapper
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Constants.ACTION_BARCODE_CALLBACK_DECODING_DATA);
-        filter.addAction(Constants.ACTION_BARCODE_CALLBACK_REQUEST_SUCCESS);
-        filter.addAction(Constants.ACTION_BARCODE_CALLBACK_REQUEST_FAILED);
-
-        registerReceiver(_myScanner, filter);
-        _myScanner.register();
-    }
-    private void unregisterReceiver()
-    {
-        if(!_myScanner.isRegistered) return;
-        unregisterReceiver(_myScanner);
-        _myScanner.unregister();
-    }
-
     @Override
     public void onStart() {
         super.onStart();
@@ -139,7 +112,6 @@ public class MainActivity extends Activity {
         );
         AppIndex.AppIndexApi.start(client, viewAction);
     }
-
     @Override
     public void onStop() {
         super.onStop();
@@ -159,14 +131,36 @@ public class MainActivity extends Activity {
         AppIndex.AppIndexApi.end(client, viewAction);
         client.disconnect();
     }
-
     @Override
     protected void onDestroy() {
         unregisterReceiver();
         super.onDestroy();
     }
+    private void registerReceiver()
+    {
+        if(_myScanner.isRegistered) return;
+        //Create Intent filter to register with BroadcastReceiver on the ContextWrapper
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Constants.ACTION_BARCODE_CALLBACK_DECODING_DATA);
+        filter.addAction(Constants.ACTION_BARCODE_CALLBACK_REQUEST_SUCCESS);
+        filter.addAction(Constants.ACTION_BARCODE_CALLBACK_REQUEST_FAILED);
 
+        registerReceiver(_myScanner, filter);
+        _myScanner.register();
+    }
+    private void unregisterReceiver()
+    {
+        if(!_myScanner.isRegistered) return;
+        unregisterReceiver(_myScanner);
+        _myScanner.unregister();
+    }
+    private void refresh() {
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        URL = sharedPref.getString(SettingsActivity.KEY_PREF_URL, "");
+        _myBrowser.JavaScriptCallBack = sharedPref.getString(SettingsActivity.KEY_PREF_JAVASCRIPTCALLBACK, "");
 
+        _myBrowser.loadURL(URL);
+    }
     private boolean mIsOpened = false;
     private void destroyEvent()
     {
@@ -174,7 +168,7 @@ public class MainActivity extends Activity {
         {
             Intent intent = new Intent();
             intent.setAction(Constants.ACTION_BARCODE_CLOSE);
-            intent.putExtra(Constants.EXTRA_HANDLE, _myBrowser.barcodeHandle);
+            intent.putExtra(Constants.EXTRA_HANDLE, _myScanner.barcodeHandle);
             intent.putExtra(Constants.EXTRA_INT_DATA3, 600);
             sendBroadcast(intent);
         }

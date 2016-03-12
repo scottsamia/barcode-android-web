@@ -6,7 +6,7 @@ import android.content.Intent;
 /**
  * Created by SamiaS on 3/11/2016.
  */
-public interface Recipient {
+public interface BarcodeRecipient {
 
-    void onReceive(Context context, Intent intent);
+    void onReceive(String barcode, String barcodeType);
 }
